@@ -2,9 +2,8 @@ name: Reintento Automatico OCI ARM con Notificacion
 
 on:
   schedule:
-    # Se ejecuta automáticamente cada 10 minutos (24/7)
     - cron: '*/10 * * * *'
-  workflow_dispatch: # Permite lanzarlo manualmente cuando quieras desde la pestaña Actions
+  workflow_dispatch:
 
 jobs:
   retry-apply:
@@ -20,13 +19,13 @@ jobs:
           OCI_USER: ${{ secrets.OCI_CLI_USER }}
           OCI_TENANCY: ${{ secrets.OCI_CLI_TENANCY }}
           OCI_FINGERPRINT: ${{ secrets.OCI_CLI_FINGERPRINT }}
-          OCI_KEY_BASE64: ${{ secrets.OCI_CLI_KEY_CONTENT }}
+          OCI_KEY: ${{ secrets.OCI_CLI_KEY_CONTENT }}
           OCI_REGION: "mx-queretaro-1"
           OCI_CLI_SUPPRESS_FILE_PERMISSIONS_WARNING: "True"
         run: |
           mkdir -p ~/.oci
-          # Decodifica la clave en Base64 para reconstruir el archivo original intacto
-          echo "$OCI_KEY_BASE64" | base64 -d > ~/.oci/oci_api_key.pem
+          # Pasa la variable de entorno directamente al archivo respetando los saltos de línea
+          echo "$OCI_KEY" > ~/.oci/oci_api_key.pem
           chmod 600 ~/.oci/oci_api_key.pem
           
           cat <<EOF > ~/.oci/config
