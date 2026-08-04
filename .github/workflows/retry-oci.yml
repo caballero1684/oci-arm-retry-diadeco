@@ -26,7 +26,6 @@ jobs:
         run: |
           mkdir -p ~/.oci
           
-          # Escribe la llave preservando los saltos de línea exactos de GitHub Secrets
           cat << 'EOF' > ~/.oci/oci_api_key.pem
           ${{ secrets.OCI_CLI_KEY_CONTENT }}
           EOF
@@ -52,7 +51,7 @@ jobs:
           JOB_ID=$(oci resource-manager job create-apply-job \
             --stack-id ${{ secrets.OCI_STACK_ID }} \
             --execution-plan-strategy AUTO_APPROVED \
-            --query "data.id" --raw-output)
+            --query 'data.id' --raw-output)
           
           echo "Job creado con ID: $JOB_ID"
           echo "job_id=$JOB_ID" >> $GITHUB_OUTPUT
@@ -61,7 +60,7 @@ jobs:
           
           JOB_STATUS=$(oci resource-manager job get \
             --job-id $JOB_ID \
-            --query "data.lifecycle-state" --raw-output)
+            --query 'data."lifecycle-state"' --raw-output)
           
           echo "Estado del Job: $JOB_STATUS"
           echo "job_status=$JOB_STATUS" >> $GITHUB_OUTPUT
