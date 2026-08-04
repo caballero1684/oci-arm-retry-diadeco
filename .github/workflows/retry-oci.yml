@@ -1,0 +1,80 @@
+name: Reintento Automatico OCI ARM con Notificacion
+
+on:
+  schedule:
+    # Se ejecuta automáticamente cada 10 minutos (24/7)
+    - cron: '*/10 * * * *'
+  workflow_dispatch: # Permite lanzarlo manualmente cuando quieras desde la pestaña Actions
+
+jobs:
+  retry-apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Instalar OCI CLI
+        run: |
+          bash -c "$(curl -L https://raw.githubusercontent.com/oracle/oracle-cli/master/scripts/install/install.sh)" --accept-all-defaults
+          echo "/home/runner/bin" >> $GITHUB_PATH
+
+      - name: Configurar Credenciales OCI
+        env:
+          OCI_USER: ${{ secrets.OCI_CLI_USER }}
+          OCI_TENANCY: ${{ secrets.OCI_CLI_TENANCY }}
+          OCI_FINGERPRINT: ${{ secrets.OCI_CLI_FINGERPRINT }}
+          OCI_KEY: ${{ secrets.OCI_CLI_KEY_CONTENT }}
+          OCI_REGION: "mx-queretaro-1"
+        run: |
+          mkdir -p ~/.oci
+          echo "$OCI_KEY" > ~/.oci/oci_api_key.pem
+          chmod 600 ~/.oci/oci_api_key.pem
+          cat <<EOF > ~/.oci/config
+          [DEFAULT]
+          user=$OCI_USER
+          fingerprint=$OCI_FINGERPRINT
+          key_file=~/.oci/oci_api_key.pem
+          tenancy=$OCI_TENANCY
+          region=$OCI_REGION
+          EOF
+
+      - name: Crear Apply Job en Resource Manager y Monitorear
+        id: oci_job
+        run: |
+          # Crear el job de ejecución en Resource Manager
+          JOB_ID=$(oci resource-manager job create-apply-job \
+            --stack-id ${{ secrets.OCI_STACK_ID }} \
+            --execution-plan-strategy AUTO_APPROVED \
+            --query "data.id" --raw-output)
+          
+          echo "Job creado con ID: $JOB_ID"
+          echo "job_id=$JOB_ID" >> $GITHUB_OUTPUT
+
+          # Esperar a que el job termine de procesarse en OCI
+          sleep 45
+          
+          JOB_STATUS=$(oci resource-manager job get \
+            --job-id $JOB_ID \
+            --query "data.lifecycle-state" --raw-output)
+          
+          echo "Estado del Job: $JOB_STATUS"
+          echo "job_status=$JOB_STATUS" >> $GITHUB_OUTPUT
+
+      - name: Enviar Correo de Exito
+        if: steps.oci_job.outputs.job_status == 'SUCCEEDED'
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          subject: "🎉 ¡Instancia OCI ARM Creada Exitosamente!"
+          to: ${{ secrets.NOTIFY_EMAIL }}
+          from: "OCI Automation <${{ secrets.EMAIL_USERNAME }}>"
+          body: |
+            ¡La solicitud de capacidad para tu máquina virtual ARM en OCI ha sido completada con éxito!
+            
+            Detalles del Job:
+            - Stack ID: ${{ secrets.OCI_STACK_ID }}
+            - Job ID: ${{ steps.oci_job.outputs.job_id }}
+            - Estado: SUCCEEDED
+            
+            Puedes ingresar a la consola de Oracle Cloud Infrastructure para verificar el estado de la instancia.
