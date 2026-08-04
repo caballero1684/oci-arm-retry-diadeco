@@ -22,10 +22,12 @@ jobs:
           OCI_FINGERPRINT: ${{ secrets.OCI_CLI_FINGERPRINT }}
           OCI_KEY: ${{ secrets.OCI_CLI_KEY_CONTENT }}
           OCI_REGION: "mx-queretaro-1"
+          OCI_CLI_SUPPRESS_FILE_PERMISSIONS_WARNING: "True"
         run: |
           mkdir -p ~/.oci
-          echo "$OCI_KEY" > ~/.oci/oci_api_key.pem
+          printf "%s\n" "$OCI_KEY" > ~/.oci/oci_api_key.pem
           chmod 600 ~/.oci/oci_api_key.pem
+          
           cat <<EOF > ~/.oci/config
           [DEFAULT]
           user=$OCI_USER
@@ -34,6 +36,8 @@ jobs:
           tenancy=$OCI_TENANCY
           region=$OCI_REGION
           EOF
+          
+          chmod 600 ~/.oci/config
 
       - name: Crear Apply Job en Resource Manager y Monitorear
         id: oci_job
