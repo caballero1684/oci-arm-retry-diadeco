@@ -10,10 +10,10 @@ jobs:
   retry-apply:
     runs-on: ubuntu-latest
     steps:
-      - name: Instalar OCI CLI
+      - name: Configurar Python e Instalar OCI CLI
         run: |
-          bash -c "$(curl -L https://raw.githubusercontent.com/oracle/oracle-cli/master/scripts/install/install.sh)" --accept-all-defaults
-          echo "/home/runner/bin" >> $GITHUB_PATH
+          python -m pip install --upgrade pip
+          pip install oci-cli
 
       - name: Configurar Credenciales OCI
         env:
