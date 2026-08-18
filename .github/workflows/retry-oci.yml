@@ -1,8 +1,8 @@
 name: Reintento Automatico OCI ARM con Notificacion
 
 on:
-  schedule:
-    - cron: '*/30 * * * *' # wake up cron
+  #schedule:
+  #  - cron: '*/30 * * * *' # wake up cron
   workflow_dispatch:
 
 jobs:
